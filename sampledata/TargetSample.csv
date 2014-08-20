@@ -1,0 +1,6 @@
+Location Type,Location #,City,Address,Zip,State,Operation Status,Power Outage Status,Planned/Actual Close Time,Planned/Actual Open Time,Facility Damage,latitude,longitude
+Store,1923,Columbia,6090A Garners Ferry Rd,29209,SC,Demo-Closed,Utility Power,,7/13/2014 8:00,No,33.9818,-80.9686
+Store,2027,Evans,4223 Washington Rd,30809,GA,Demo-Closed,Utility Power,,7/13/2014 8:00,No,33.5267,-82.1184
+Store,1198,Anderson,3519 Clemson Blvd,29621,SC,Demo-Closed,Utility Power,,7/13/2014 8:00,No,34.5499,-82.6798
+Store,1090,Augusta,235 Robert C Daniel Jr Pkwy,30909,GA,Demo-Closed,Utility Power,,7/13/2014 8:00,No,33.4909,-82.0812
+Store,1937,Taylors,6025 Wade Hampton Blvd,29687,SC,Demo-Closed,Utility Power,,7/13/2014 8:00,No,34.9372,-82.2799

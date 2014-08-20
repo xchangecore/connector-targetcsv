@@ -1,0 +1,103 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<beans:beans xmlns:beans="http://www.springframework.org/schema/beans"
+             xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+             xmlns="http://www.springframework.org/schema/integration"
+             xmlns:file="http://www.springframework.org/schema/integration/file"
+             xsi:schemaLocation="http://www.springframework.org/schema/beans http://www.springframework.org/schema/beans/spring-beans-3.0.xsd 
+             http://www.springframework.org/schema/integration http://www.springframework.org/schema/integration/spring-integration-2.0.xsd 
+             http://www.springframework.org/schema/integration/file http://www.springframework.org/schema/integration/file/spring-integration-file-2.0.xsd">
+
+    <beans:bean id="defaultErrorHandlingServiceActivator" class="com.saic.uicds.clients.em.targetcsv.DefaultErrorHandlingServiceActivator"/>
+
+    <service-activator input-channel="errorChannel" ref="defaultErrorHandlingServiceActivator"/>
+             
+    <beans:bean id="inboundFileDirectory" class="org.springframework.core.io.FileSystemResource">
+        <beans:constructor-arg value="c:/opt/targetcsv/data"/>
+    </beans:bean>
+     
+    <file:inbound-channel-adapter prevent-duplicates="false" id="filesIn" directory="file:#{inboundFileDirectory.file.absolutePath}" 
+        filename-pattern="*.csv" channel="inboundFileChannel">
+        <poller max-messages-per-poll="-1" id="poller">
+            <interval-trigger interval="10000"/>
+        </poller>
+    </file:inbound-channel-adapter>
+
+    <channel id="inboundFileChannel"/>
+    <service-activator input-channel="inboundFileChannel" output-channel="inboundTgEventsChannel" ref="inboundFileServiceActivator"/>
+ 
+    <channel id="inboundTgEventsChannel"/>
+    <transformer input-channel="inboundTgEventsChannel" output-channel="inboundContentEnricher" ref="eventAggregator"/>
+    
+    <channel id="inboundContentEnricher"/>
+    <transformer input-channel="inboundContentEnricher" output-channel="inboundEventSplitterChannel" ref="incidentContentEnricher"/>
+    
+    <channel id="inboundEventSplitterChannel" />  
+    <splitter input-channel="inboundEventSplitterChannel" output-channel="inboundMessageListChannel"/>
+    
+    <channel id="inboundMessageListChannel"/>
+    <transformer input-channel="inboundMessageListChannel" output-channel="inboundIncidentManagementChannel" ref="workProductContentEnricher"/>
+
+    <channel id="inboundIncidentManagementChannel"/>
+    <service-activator input-channel="inboundIncidentManagementChannel" ref="incidentManagementServiceAdapter"/> 
+
+    <beans:bean id="inboundFileServiceActivator"
+                class="com.saic.uicds.clients.em.targetcsv.TGFileAdapter" init-method="initialize"/>
+
+    <beans:bean id="eventAggregator"
+                class="com.saic.uicds.clients.em.targetcsv.EventAggregator"/>
+                
+    <beans:bean id="incidentContentEnricher"
+                class="com.saic.uicds.clients.em.targetcsv.IncidentContentEnricher">
+                <beans:property name="uicdsCore" ref="uicdsCore"/>
+    </beans:bean>
+                
+    <beans:bean id="workProductContentEnricher" class="com.saic.uicds.clients.em.targetcsv.WorkProductContentEnricher"/>
+
+    <beans:bean id="incidentManagementServiceAdapter" class="com.saic.uicds.clients.em.targetcsv.IncidentManagementServiceAdapter">
+        <beans:property name="uicdsCore" ref="uicdsCore"/>
+    </beans:bean>
+
+    
+    <!--   <beans:bean id="tgStoreReader"
+	    class="com.saic.uicds.clients.em.targetcsv.TGStoreAdapter" init-method="initialize"/>
+
+    -->
+
+    <beans:bean id="uicdsCore" class="com.saic.uicds.clients.em.async.UicdsCoreImpl">
+         <beans:property name="webServiceClient" ref="springWebServiceClient"/> 
+    </beans:bean>
+    
+    <beans:bean id="springWebServiceClient" class="com.saic.uicds.clients.util.SpringClient">
+         <beans:property name="webServiceTemplate" ref="webServiceTemplate"/> 
+    </beans:bean>
+
+    <beans:bean id="xmlbeansMarshaller" class="org.springframework.oxm.xmlbeans.XmlBeansMarshaller" />
+    <beans:bean class="org.springframework.ws.server.endpoint.adapter.GenericMarshallingMethodEndpointAdapter">
+        <beans:property name="marshaller" ref="xmlbeansMarshaller" />
+        <beans:property name="unmarshaller" ref="xmlbeansMarshaller" />
+    </beans:bean>
+
+    <beans:bean id="messageFactory" class="org.springframework.ws.soap.saaj.SaajSoapMessageFactory" />
+    
+    <!-- WebServiceTemplate for the UICDS Core -->
+   <beans:bean id="webServiceTemplate" class="org.springframework.ws.client.core.WebServiceTemplate">
+        <beans:constructor-arg ref="messageFactory" />
+        <beans:property name="marshaller" ref="xmlbeansMarshaller" />
+        <beans:property name="unmarshaller" ref="xmlbeansMarshaller" />
+    <beans:property name="defaultUri" value="http://localhost/uicds/core/ws/services"/>  
+        <beans:property name="messageSender">
+            <beans:bean class="org.springframework.ws.transport.http.CommonsHttpMessageSender">
+                <beans:property name="credentials">
+                    <beans:bean class="org.apache.commons.httpclient.UsernamePasswordCredentials">
+                        <beans:constructor-arg value="uicds" />
+                        <beans:constructor-arg value="uicdspassword" />
+                    </beans:bean>
+                </beans:property>
+            </beans:bean>
+        </beans:property>
+    </beans:bean>
+
+
+</beans:beans>  
+
+
